@@ -13,7 +13,7 @@ from models.resnet50_acne import build_resnet50_acne
 
 DATA_ROOT = "data/acne"   # 서버 기준 경로
 BATCH_SIZE = 32
-NUM_EPOCHS = 20
+NUM_EPOCHS = 3
 LR = 1e-4
 FREEZE_BACKBONE = False
 SAVE_PATH = "acne_resnet50_best.pth"
