@@ -39,13 +39,24 @@ class SkinAnalysisService:
         left_res = self.acne_predictor.predict_pil(left_img)
         right_res = self.acne_predictor.predict_pil(right_img)
 
-        # 예시: 전체 severity score = 세 뷰에서 'acne', 'pimple', 'spot' 확률 평균
-        def severity_score(res: dict) -> float:
+       # 여드름 심각도 점수를 확률의 가중합으로 계산
+        def severity_score(res:dict) ->float:
             probs = res["probs"]
-            keys = [k for k in probs.keys() if k in ("acne", "pimple", "spot")]
-            if not keys:
-                return 0.0
-            return float(sum(probs[k] for k in keys) / len(keys))
+
+            p_acne = float(probs.get("acne", 0.0)) # 여드름
+            p_pimple = float(probs.get("pimple", 0.0)) # 뾰루지
+            p_spot = float(probs.get("spot", 0.0)) # 반점, 자국
+
+            # 가중치(acne: 1.0(가장 심함) / pimple: 0.6(중간) / spot: 0.3(흔적, 자국))
+            score = 1.0 * p_acne + 0.6 * p_pimple + 0.3 * p_spot
+
+            if score < 0.0:
+                score = 0.0
+            if score > 1.0:
+                score = 1.0
+
+            return score  
+
 
         front_score = severity_score(front_res)
         left_score = severity_score(left_res)
@@ -60,4 +71,31 @@ class SkinAnalysisService:
                 "right": {**right_res, "severity": right_score},
                 "overall_severity": overall_score,
             }
+        }
+
+    # 백엔드에 넘겨줄 분석 결과 가공(우선 나머지 비워두고 acne만)
+    def analyze(
+        self,
+        front: PathLike | Image.Image,
+        left: PathLike | Image.Image,
+        right: PathLike | Image.Image,
+    ):
+        """
+        전체 피부 분석 (여드름 + 주름 + 모공 + 입술 건조도)
+
+        현재는 여드름만 실제 값이 들어가고,
+        wrinkle / pores / lip_dryness 는 나중에 Mediapipe 코드 들어오면 채울 예정.
+        """
+        acne_block = self.analyze_acne(front, left, right)["acne"]
+
+        # TODO: 나중에 Mediapipe 모듈이 준비되면 아래 None 부분만 교체하면 됨.
+        wrinkle_block = None
+        pores_block = None
+        lip_block = None
+
+        return {
+            "acne": acne_block,
+            "wrinkle": wrinkle_block,
+            "pores": pores_block,
+            "lip_dryness": lip_block,
         }
