@@ -1,18 +1,14 @@
-# acne/infer_acne.py
 from pathlib import Path
 
 import torch
 from torchvision import transforms
 from PIL import Image
 
-from models.resnet50_acne import build_resnet50_acne
+from .models.resnet50_acne import build_resnet50_acne
 
 
 class AcnePredictor:
-    def __init__(self, checkpoint_path: str, device: str | None = None):
-        """
-        checkpoint_path: train_resnet_acne.py에서 저장한 .pth 경로
-        """
+    def __init__(self, checkpoint_path, device):
         if device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"
 
